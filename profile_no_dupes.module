@@ -1,0 +1,418 @@
+<?php
+
+function profile_no_dupes_init(){
+  drupal_add_css(drupal_get_path('module', 'profile_no_dupes') . '/css/profile_no_dupes_modal.css', array('group' => CSS_THEME, 'every_page' => TRUE, 'weight' => 999));
+
+}
+
+/**
+ * Implements hook_menu
+ */
+function profile_no_dupes_menu(){
+  $items = array();
+  $items['admin/profile/create/%ctools_js/%'] = array(
+    'page callback' => 'profile_no_dupes_create_profile_callback',
+    'page arguments' => array(3, 4),
+    'access arguments' => array('create profile content'),
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+function profile_no_dupes_form_alter(&$form, $form_state, $form_id){
+  if($form_id == 'students_node_form'
+    || $form_id == 'participant_node_form'
+    || $form_id == 'presentation_node_form'
+    || $form_id == 'public_outreach_node_form'
+    || $form_id == 'publications_node_form'
+    || $form_id == 'workshop_node_form'
+    || $form_id == 'dataset_node_form'){
+      $form['#prefix'] = '<div id="form-contrib-wrapper>"';
+      $form['#suffix'] = '</div>';
+
+    $field_name = '';
+    $description_field = '';
+
+    ctools_include('modal');
+    ctools_modal_add_js();
+
+    $form['hdn-profile-added'] = array(
+      '#type' => 'hidden',
+      '#prefix' => '<div id="pnl-hdn-profile-added">',
+      '#suffix' => '</div>',
+    );
+
+    $form['hdn-profile-name-added'] = array(
+      '#type' => 'hidden',
+      '#prefix' => '<div id="pnl-hdn-profile-name-added">',
+      '#suffix' => '</div>',
+    );
+
+    $form['hdn-profile-field'] = array(
+      '#type' => 'hidden',
+      '#prefix' => '<div id="pnl-hdn-profile-field">',
+      '#suffix' => '</div>',
+    );
+
+    switch($form_id){
+      case 'students_node_form':
+        $field_name = 'edit-field-student-profile-und';
+        $modal_link = '<span id="modal-create-user-link">' . l(t('Create a New Profile'), 'admin/profile/create/nojs/' . $field_name, array('attributes' => array('class' => 'ctools-use-modal lnk-profile-modal', 'data-form-id' => $form_id, 'data-target-field' => $field_name))) . '</span>';
+        $form['field_student_profile']['und']['#description'] = t('Search for an existing profile by typing the student\'s name, or ' . $modal_link  . '.');
+        break;
+      case 'participant_node_form':
+        $field_name = 'edit-field-participant-name-und';
+
+        $form['field_participant_name']['und']['#ajax'] = array(
+          'event' => 'blur',
+          'callback' => 'profile_no_dupes_test_callback',
+          'wrapper' => 'form-contrib-wrapper',
+        );
+        $form['field_participant_name']['und']['#element_validate'][] = 'profile_no_dupes_profile_validate';
+        $modal_link = '<span id="modal-create-user-link">' . l(t('Create a New Profile'), 'admin/profile/create/nojs/' . $field_name, array('attributes' => array('class' => 'use-ajax ctools-use-modal lnk-profile-modal', 'data-form-id' => $form_id, 'data-target-field' => $field_name))) . '</span>';
+        $form['field_participant_name']['und']['#description'] = t('Search for an existing profile by typing the participant\'s name, or ' . $modal_link  . '.');
+        break;
+      case 'presentation_node_form':
+        $field_name = 'edit-field-contrib-author-und';
+        $modal_link = '<span id="modal-create-user-link">' . l(t('Create a New Profile'), 'admin/profile/create/nojs/' . $field_name, array('attributes' => array('class' => 'ctools-use-modal lnk-profile-modal', 'data-form-id' => $form_id, 'data-target-field' => $field_name))) . '</span>';
+        $form['field_contrib_author']['und']['#description'] = t('Search for an existing profile by typing the author\'s name, or ' . $modal_link  . '.');
+
+        $field_name = 'edit-field-presenter-profile-und';
+        $modal_link = '<span id="modal-create-user-link">' . l(t('Create a New Profile'), 'admin/profile/create/nojs/' . $field_name, array('attributes' => array('class' => 'ctools-use-modal lnk-profile-modal', 'data-form-id' => $form_id, 'data-target-field' => $field_name))) . '</span>';
+        $form['field_presenter_profile']['und']['#description'] = t('Search for an existing profile by typing the presenter\'s name, or ' . $modal_link  . '.');
+        break;
+      case 'public_outreach_node_form':
+        $field_name = 'edit-field-contrib-author-und';
+        $modal_link = '<span id="modal-create-user-link">' . l(t('Create a New Profile'), 'admin/profile/create/nojs/' . $field_name, array('attributes' => array('class' => 'ctools-use-modal lnk-profile-modal', 'data-form-id' => $form_id, 'data-target-field' => $field_name))) . '</span>';
+        $form['field_contrib_author']['und']['#description'] = t('Search for an existing profile by typing the author\'s name, or ' . $modal_link  . '.');
+        break;
+      case 'publications_node_form':
+        $field_name = 'edit-field-contrib-author-und';
+        $modal_link = '<span id="modal-create-user-link">' . l(t('Create a New Profile'), 'admin/profile/create/nojs/' . $field_name, array('attributes' => array('class' => 'ctools-use-modal lnk-profile-modal', 'data-form-id' => $form_id, 'data-target-field' => $field_name))) . '</span>';
+        $form['field_contrib_author']['und']['#description'] = t('Search for an existing profile by typing the author\'s name, or ' . $modal_link  . '.');
+        break;
+      case 'workshop_node_form':
+        $field_name = 'edit-field-organizer-s-und';
+        $modal_link = '<span id="modal-create-user-link">' . l(t('Create a New Profile'), 'admin/profile/create/nojs/' . $field_name, array('attributes' => array('class' => 'ctools-use-modal lnk-profile-modal', 'data-form-id' => $form_id, 'data-target-field' => $field_name))) . '</span>';
+        $form['field_organizer_s_']['und']['#description'] = t('Search for an existing profile by typing the organizer\'s name, or ' . $modal_link  . '.');
+
+        $field_name = 'edit-field-participant-name-und';
+        $modal_link = '<span id="modal-create-user-link">' . l(t('Create a New Profile'), 'admin/profile/create/nojs/' . $field_name, array('attributes' => array('class' => 'ctools-use-modal lnk-profile-modal', 'data-form-id' => $form_id, 'data-target-field' => $field_name))) . '</span>';
+        $form['field_participant_name']['und']['#description'] = t('Search for an existing profile by typing the participant\'s name, or ' . $modal_link  . '.');
+        break;
+        case 'dataset_node_form':
+          $field_name = 'edit-field-dataset-stakeholders-und';
+          $modal_link = '<span id="modal-create-user-link">' . l(t('Create a New Profile'), 'admin/profile/create/nojs/' . $field_name, array('attributes' => array('class' => 'ctools-use-modal lnk-profile-modal', 'data-form-id' => $form_id, 'data-target-field' => $field_name))) . '</span>';
+          $form['field_dataset_stakeholders']['und']['#description'] = t('Search for an existing profile by typing the stakeholder\'s name, or ' . $modal_link  . '.');
+          break;
+    }
+    $form['#validate'][] = 'profile_no_dupes_contribution_validate';
+
+    #ctools_include('modal');
+    #ctools_modal_add_js();
+
+  }
+
+  if($form_id == 'profile_no_dupes_create_profile_form'){
+    $type = 'profile';
+    $op = empty($form['#node']->nid) ? UNIQUENESS_ADD_NODE : UNIQUENESS_EDIT_NODE;
+
+    // Save the content type and operation for later use
+    _uniqueness_widget_store(array('type' => $type, 'op' => $op));
+
+    if (user_access('use uniqueness widget') && in_array($op, variable_get('uniqueness_type_' . $type, array()))) {
+      // Add our javascript.
+      $form['uniqueness']['#attached']['js'] = array(
+        drupal_get_path('module', 'profile_no_dupes') . '/js/profile_no_dupes.uniqueness.js',
+        array(
+          'data' => array('uniqueness' => _uniqueness_get_js_settings($type, $form['nid']['#value'])),
+          'type' => 'setting',
+        )
+      );
+
+
+
+      // Save relevant form values in a temporary store, so that we can generate
+      // the list of related content right away for node previews or when
+      // editing existing nodes. (The store is needed because we cannot pass
+      // data directly to a block from within this function.)
+      $values = array();
+      // Store the node id.
+      if (!empty($form['nid']['#value'])) {
+        $values['nid'] = $form['nid']['#value'];
+      }
+      // Store the title.
+      if (!empty($form['title']['#default_value'])) {
+        $values['title'] = strip_tags($form['title']['#default_value']);
+      }
+      // Store the tags.
+      if (!empty($values['taxonomy']['tags'][1])) {
+        $values['tags'] = strip_tags($form['taxonomy']['tags'][1]['#default_value']);
+      }
+      _uniqueness_store($values);
+
+      // Embed inline widget if enabled.
+      if (uniqueness_widget_enabled(UNIQUENESS_WIDGET_INLINE)) {
+        // Get rendered list of results.
+        $count = 0;
+        $content = uniqueness_widget_content($count);
+
+        // Only add the inline uniqueness widget if it has not been defined
+        // already. This makes it possible for other modules to customize the
+        // form element in their own hook_form_alter() implementation.
+        $form['uniqueness'] += array(
+          '#type' => 'fieldset',
+          '#title' => filter_xss_admin(variable_get('uniqueness_default_title', t('Related content'))),
+          '#collapsible' => 1,
+          '#collapsed' => ($count == 0),
+          '#weight' => -100,
+          'uniqueness_type' => array(),
+        );
+        $form['uniqueness']['uniqueness_type'] += array(
+          '#type' => 'item',
+          '#title' => '',
+          '#markup' => $content,
+        );
+      }
+    }
+  }
+
+  return $form;
+}
+
+function profile_no_dupes_profile_validate($element, &$form_state){
+
+  form_error($element, 'test error validate');
+  form_set_error('', 'test error validate2');
+
+  watchdog('test', 'validate');
+  dpm($form);
+}
+
+function profile_no_dupes_test_callback($form, &$form_state){
+  watchdog('test', 'in callback');
+dpm($form);
+  $form_id = $form['#form_id'];
+  //dpm(array($form_id, $form, $form_state));
+  // validate the form
+  drupal_validate_form($form_id, $form, $form_state);
+  dpm($form);
+  // if there are errors, return the form to display the error messages
+  if (form_get_errors()) {
+    watchdog('test', 'validate failed');
+    form_set_error('', 'test error callback');
+
+    $form_state['rebuild'] = TRUE;
+    return $form;
+  }
+}
+
+function profile_no_dupes_create_profile_callback($ajax, $target_field = NULL){
+  if($ajax){
+    ctools_include('ajax');
+    ctools_include('modal');
+
+    $form_state = array(
+      'ajax' => TRUE,
+      'title' => t('Create Profile'),
+      'target_field' => $target_field,
+    );
+    $output = ctools_modal_form_wrapper('profile_no_dupes_create_profile_form', $form_state);
+
+    if(!empty($form_state['ajax_commands'])){
+      $output = $form_state['ajax_commands'];
+    }
+    if($form_state['executed']){
+
+      $full_name = !empty($form_state['storage']['name']) ? $form_state['storage']['name'] : '';
+      $nid = !empty($form_state['storage']['nid']) ? $form_state['storage']['nid'] : '';
+      $target_field = !empty($form_state['storage']['target_field']) ? $form_state['storage']['target'] : $target_field;
+
+      if(!empty($full_name) && !empty($nid)){
+        $output = array(
+          ctools_modal_command_dismiss(),
+          ajax_command_invoke('#pnl-hdn-profile-added input[type=hidden]', 'val', array($nid)),
+          ajax_command_invoke('#pnl-hdn-profile-name-added input[type=hidden]', 'val', array($full_name)),
+          ajax_command_invoke('#pnl-hdn-profile-field input[type=hidden]', 'val', array($target_field)),
+
+          ajax_command_invoke('#pnl-hdn-profile-added input[type=hidden]', 'trigger', array('change')),
+        );
+      }
+    }
+
+    print ajax_render($output);
+    drupal_exit();
+  }
+
+  else{
+    return drupal_get_form('profile_no_dupes_create_profile_form');
+  }
+}
+
+function profile_no_dupes_create_profile_form($form, $form_state){
+  $fields = array();
+  $instances = field_info_instances('node', 'profile');
+  $extra_fields = field_info_extra_fields('node', 'profile', 'form');
+
+  foreach ($extra_fields as $name => $extra_field) {
+    $fields[$name] = array(
+      'title' => $extra_field['label'],
+      'weight' => $extra_field['weight'],
+    );
+  }
+
+  $form = array();
+
+  $target_field = !empty($form_state['target_field']) ? $form_state['target_field'] : '';
+  if(!empty($target_field)){
+    $form['hdn-target-field'] = array(
+      '#type' => 'hidden',
+      '#prefix' => '<div id="pnl-hdn-target-field">',
+      '#suffix' => '</div>',
+      '#default_value' => $target_field,
+      '#value' => $target_field,
+    );
+  }
+
+  //$field_title = field_info_field('title');
+  //$instance_title = field_info_instance('node', 'title', 'profile');
+
+  $field_first_name = field_info_field('field_first_name');
+  $instance_first_name = field_info_instance('node', 'field_first_name', 'profile');
+
+  $field_last_name = field_info_field('field_last_name');
+  $instance_last_name = field_info_instance('node', 'field_last_name', 'profile');
+
+  $field_middle_name = field_info_field('field_middle_name');
+  $instance_middle_name = field_info_instance('node', 'field_middle_name', 'profile');
+
+  $field_ins_dept = field_info_field('field_institutional_department');
+  $instance_ins_dept = field_info_instance('node', 'field_institutional_department', 'profile');
+
+  $field_email = field_info_field('field_email');
+  $instance_email = field_info_instance('node', 'field_email', 'profile');
+
+  $form['#parents'] = array();
+
+  $form['title'] = array(
+    '#title' => t('Display Name'),
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#attributes' => array(
+      'class' => array(
+        'field-title'
+      ),
+    ),
+  );
+
+  $form['first_name'] = field_default_form('node', NULL, $field_first_name, $instance_first_name, LANGUAGE_NONE, NULL, $form, $form_state);
+  $form['first_name']['field_first_name']['und'][0]['value']['#required'] = TRUE;
+
+  $form['last_name'] = field_default_form('node', NULL, $field_last_name, $instance_last_name, LANGUAGE_NONE, NULL, $form, $form_state);
+  $form['last_name']['field_last_name']['und'][0]['value']['#required'] = TRUE;
+
+  $form['middle_name'] = field_default_form('node', NULL, $field_middle_name, $instance_middle_name, LANGUAGE_NONE, NULL, $form, $form_state);
+
+  $form['email'] = field_default_form('node', NULL, $field_email, $instance_email, LANGUAGE_NONE, NULL, $form, $form_state);
+  $form['email']['field_email']['und'][0]['email']['#required'] = TRUE;
+
+  $form['ins_dept'] = field_default_form('node', NULL, $field_ins_dept, $instance_ins_dept, LANGUAGE_NONE, NULL, $form, $form_state);
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Submit',
+    '#validate' => array('profile_no_dupes_create_profile_form_validate'),
+    '#prefix' => '<div class="pnl-btn-wrapper">',
+    '#suffix' => '</div>',
+    '#attributes' => array(
+      'class' => array(
+        'btn-profile-modal',
+        'btn-profile-modal-submit-profile'
+      ),
+    ),
+  );
+  return $form;
+}
+
+function profile_no_dupes_contribution_validate($form, &$form_state){
+
+    ctools_include('modal');
+    ctools_modal_add_js();
+}
+
+function profile_no_dupes_create_profile_form_validate($form, &$form_state){
+  $email = !empty($form_state['values']['field_email']) ? $form_state['values']['field_email'][LANGUAGE_NONE][0]['email'] : '';
+  $first_name = !empty($form_state['values']['field_first_name']) ? $form_state['values']['field_first_name'][LANGUAGE_NONE][0]['value'] : '';
+  $last_name = !empty($form_state['values']['field_last_name']) ? $form_state['values']['field_last_name'][LANGUAGE_NONE][0]['value'] : '';
+
+  if(!empty($email)){
+    $email_validation = user_validate_mail($email);
+    if(!empty($email_validation)){
+      form_set_error($email_validation);
+    }
+  }
+  else{
+    form_set_error('field_email', t('Email address is required.'));
+  }
+
+  if(empty($first_name)){
+    form_set_error('field_first_name', t('First name is required.'));
+  }
+
+  if(empty($last_name)){
+    form_set_error('field_last_name', t('Last name is required.'));
+  }
+}
+
+function profile_no_dupes_create_profile_form_submit(&$form, &$form_state){
+  global $user;
+
+  $email = !empty($form_state['values']['field_email']) ? $form_state['values']['field_email'][LANGUAGE_NONE][0]['email'] : '';
+  $first_name = !empty($form_state['values']['field_first_name']) ? $form_state['values']['field_first_name'][LANGUAGE_NONE][0]['value'] : '';
+  $last_name = !empty($form_state['values']['field_last_name']) ? $form_state['values']['field_last_name'][LANGUAGE_NONE][0]['value'] : '';
+  $middle_name = !empty($form_state['values']['field_middle_name']) ? $form_state['values']['field_middle_name'][LANGUAGE_NONE][0]['value'] : '';
+  $dept = !empty($form_state['values']['field_institutional_department']) ? $form_state['values']['field_institutional_department'][LANGUAGE_NONE][0]['tid'] : '';
+
+  $full_name = $first_name;
+  if(!empty($middle_name)){$full_name .= ' ' . $middle_name;}
+  if(!empty($last_name)){$full_name .= ' ' . $last_name;}
+
+  $node_values = array(
+    'type' => 'profile',
+    'uid' => $user->uid,
+    'status' => 1,
+    'comment' => 0,
+    'promote' => 0,
+  );
+
+  $entity = entity_create('node', $node_values);
+  $wrapper = entity_metadata_wrapper('node', $entity);
+  $wrapper->title = $full_name;
+  $wrapper->field_first_name = $first_name;
+  $wrapper->field_middle_name = $middle_name;
+  $wrapper->field_last_name = $last_name;
+  $wrapper->field_email = $email;
+
+  if(!empty($dept)){
+    $wrapper->field_institutional_department = $dept;
+  }
+
+  $wrapper->save();
+
+  $nid = $wrapper->getIdentifier();
+  $form_state['storage']['name'] = $full_name;
+  $form_state['storage']['nid'] = $nid;
+
+  $form_state['ajax_commands'][] = ctools_modal_command_dismiss();
+
+/*
+    $user_span = '<span class="read-only">' . $first_name . ' ' . $last_name . '</span>';
+    $user_span .= '<a class="btn-custom" href="">Start Over</a>';
+    $user_block = '<div class="form-item-inline large"><label>Student</label>' . $user_span . '</div>';
+
+    $form_state['storage']['name'] = $first_name . ' ' . $last_name;
+    $form_state['ajax_commands'][] = ctools_modal_command_dismiss();
+    $form_state['ajax_commands'][] = ajax_command_changed('#edit-customer-wrapper input[type=text]');
+    */
+
+}

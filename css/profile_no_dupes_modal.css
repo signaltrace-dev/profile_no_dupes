@@ -1,0 +1,49 @@
+div.ctools-modal-content{
+  border:1px solid #dadada;
+  border-radius: 10px;
+  max-width: 50%;
+  min-height: 600px;
+  margin: 0 auto;
+}
+
+#modal-content{
+  max-width: 95%;
+  margin: 0 auto;
+}
+
+div.ctools-modal-content .modal-header {
+  background-color: #015E88;
+  padding: 1em .25em 1em 1em;
+  border-radius: 10px 10px 0 0;
+}
+
+div.ctools-modal-content .modal-header img{
+  display:none;
+}
+
+#modal-content .form-item label{
+  font-color:#000;
+  font-weight:bold;
+  display: inline-block;
+}
+
+#modal-content .form-item input, #modal-content .form-item select, #modal-content .form-item .read-only{
+  border-radius: 3px;
+  border: 1px solid #dadada;
+  padding: 5px;
+  font-size: 14px;
+  display:inline-block;
+  width:50%;
+}
+
+#modal-content .form-item .read-only{
+  border:none;
+}
+
+#modal-content .form-item div{
+  display: inline-block;
+}
+
+#profile-no-dupes-create-profile-form .form-item-title{
+  display:none;
+}
